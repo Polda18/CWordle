@@ -12,12 +12,14 @@
 // Windows
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <termios.h>
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ansi_escapes.h"
+#include "console.h"
 
 #ifdef _WIN32
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING

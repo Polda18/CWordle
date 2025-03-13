@@ -15,7 +15,7 @@
 
 #include "game.h"
 #include "retcode.h"
-#include "ansi_escapes.h"
+#include "console.h"
 
 int main(void) {
     setup_console();            // Setup console for use of ANSI escape sequences
@@ -33,9 +33,9 @@ int main(void) {
     fprintf(stdout, "1. Enter a 5-letter word.\n");
     fprintf(stdout, "2. You have 6 attempts to guess the word.\n");
     fprintf(stdout, "3. After each guess, the program will give you feedback.\n");
-    fprintf(stdout, "   - \x1b[1;42m\x1b[2;30m GREEN \x1b[0m   : Correct letter in the correct position.\n");
-    fprintf(stdout, "   - \x1b[1;43m\x1b[2;30m YELLOW \x1b[0m  : Correct letter in the wrong position.\n");
-    fprintf(stdout, "   - \x1b[2;47m\x1b[2;30m RED \x1b[0m     : Incorrect letter.\n");
+    fprintf(stdout, "   - \x1b[38;5;0m\x1b[48;5;2m  GREEN   \x1b[0m : Correct letter in the correct position.\n");
+    fprintf(stdout, "   - \x1b[38;5;0m\x1b[48;5;3m  YELLOW  \x1b[0m : Correct letter in the wrong position.\n");
+    fprintf(stdout, "   - \x1b[38;5;0m\x1b[48;5;7m   GRAY   \x1b[0m : Incorrect letter.\n");
     fprintf(stdout, "4. If you guess the word, you win!\n");
     fprintf(stdout, "5. If you run out of attempts, you lose.\n\n");
 
@@ -47,7 +47,6 @@ int main(void) {
     game_loop(game);
 
     // Exit after the game ended
-    free(game);
-    restore_console();          // Restore console to original state
-    return 0;
+    game_end(game);
+    return EXIT_SUCCESS;
 }

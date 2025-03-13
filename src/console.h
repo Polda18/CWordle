@@ -6,11 +6,11 @@
  * Date: 12.03.2025
  * License: GNU GPLv3
  * 
- * File: ansi_escapes.h
+ * File: console.h
  */
 
-#ifndef ANSI_ESCAPES_H
-#define ANSI_ESCAPES_H
+#ifndef CONSOLE_H
+#define CONSOLE_H
 
 /**
  * Setup console for use of ANSI escape sequences
