@@ -30,6 +30,7 @@ ifeq ($(OS),Windows_NT)
   ZIP_FILE = wordle_win64.zip
   MKDIR = if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
   RM_CMD = rmdir /S /Q $(subst /,\,$(TARGET_DIR)) 2>NUL || echo Target directory already clean
+	RM_CMD_ZIP = del $(subst /,\,$(ZIP_DIR))\$(EXEC)
   CP_CMD = copy $(subst /,\,$(TARGET_DIR))\$(EXEC) $(subst /,\,$(ZIP_DIR))
   # Windows-specific zip command using PowerShell
   ZIP_CMD = powershell -Command "Compress-Archive -Path '$(subst /,\,$(ZIP_DIR))\*' -DestinationPath '$(subst /,\,$(TARGET_DIR))\$(ZIP_FILE)' -Force"
@@ -38,6 +39,7 @@ else
   ZIP_FILE = wordle_linux_x64.zip
   MKDIR = mkdir -p $(1)
   RM_CMD = rm -rf $(TARGET_DIR)
+	RM_CMD_ZIP = rm $(ZIP_DIR)/$(EXEC)
   CP_CMD = cp $(TARGET_DIR)/$(EXEC) $(ZIP_DIR)
   # Linux zip command
   ZIP_CMD = cd $(ZIP_DIR) && zip -r ../$(TARGET_DIR)/$(ZIP_FILE) *
@@ -74,6 +76,7 @@ zip: all $(ZIP_DIR)
 # Clean target
 clean:
 	$(RM_CMD)
+	$(RM_CMD_ZIP)
 
 .PHONY: all zip clean
 
