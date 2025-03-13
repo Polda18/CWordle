@@ -206,8 +206,14 @@ void game_print_guess(game_t *game) {
     // Clear line and move back to the beginning of the line
     fprintf(stdout, "\x1b[2K\r");
 
-    // Print guess
+    // Print guess beginning
     fprintf(stdout, "Turn %d: ", game->turn);
+
+    // TODO: Count letters in word to guess and the guess,
+    //       then compare them to each other and print annpotated guess
+
+    // Discard following ↓
+    //---------------------------------------------
 
     // Create word counters
     counter_arr_t *word_counters = (counter_arr_t*) malloc(sizeof(counter_arr_t));
