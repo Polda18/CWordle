@@ -46,7 +46,7 @@ bower_components
 
 # Ignore log files
 *.log
-*.txt
+#*.txt
 
 # Ignore OS files
 *.pyc
