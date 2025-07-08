@@ -12,6 +12,8 @@
 #ifndef STR_TRIM_H
 #define STR_TRIM_H
 
+#include <stddef.h>
+
 /**
  * Stores the trimmed input string into the given output buffer, which must be
  * large enough to store the result.  If it is too small, the output is

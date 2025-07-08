@@ -14,7 +14,7 @@
 #include <string.h>
 
 #include "game.h"
-#include "retcode.h"
+#include "definitions.h"
 #include "console.h"
 
 int main(void) {
@@ -23,15 +23,14 @@ int main(void) {
     // Welcome message
     fprintf(stdout, "-----------------------------------------------------\n");
     fprintf(stdout, "Welcome to Wordle!\n");
-    fprintf(stdout, "Author: Marek Poláček (Polda18)\n");
-    fprintf(stdout, "Version: v1.0\n");
-    fprintf(stdout, "Date: 12.03.2025\n");
+    fprintf(stdout, "Author: Polda18/CZghost\n");
+    fprintf(stdout, "Version: v1.1\n");
     fprintf(stdout, "License: GNU GPLv3\n");
     fprintf(stdout, "-----------------------------------------------------\n\n");
 
     fprintf(stdout, "How to play:\n");
-    fprintf(stdout, "1. Enter a 5-letter word.\n");
-    fprintf(stdout, "2. You have 6 attempts to guess the word.\n");
+    fprintf(stdout, "1. Enter a %d-letter word.\n", WORD_LENGTH);
+    fprintf(stdout, "2. You have %d attempts to guess the word.\n", MAX_TURNS);
     fprintf(stdout, "3. After each guess, the program will give you feedback.\n");
     fprintf(stdout, "   - \x1b[38;5;0m\x1b[48;5;2m  GREEN   \x1b[0m : Correct letter in the correct position.\n");
     fprintf(stdout, "   - \x1b[38;5;0m\x1b[48;5;3m  YELLOW  \x1b[0m : Correct letter in the wrong position.\n");

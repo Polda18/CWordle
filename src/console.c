@@ -12,6 +12,7 @@
 // Windows
 #ifdef _WIN32
 #include <windows.h>
+#include <errno.h>  // Include errno for error handling
 #else
 #include <termios.h>
 #endif

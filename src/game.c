@@ -20,14 +20,10 @@
     #include <windows.h>
 #endif
 
+#include "definitions.h"
 #include "game.h"
-#include "retcode.h"
 #include "str_trim.h"
 #include "console.h"
-
-void game_free(char **wordlist, int size) {
-    
-}
  
 void game_init(game_t *game) {
     // Initialize game descriptor values
@@ -71,31 +67,37 @@ void game_init(game_t *game) {
         len = trim_whitespace(line_trimmed, len + 1, line);
         line_trimmed = (char*) realloc(line_trimmed, sizeof(char) * (len + 1));
 
-        char word[6];
-        strncpy(word, line_trimmed, 5);
-        word[5] = '\0';
+        char word[WORD_LENGTH + 1]; // Buffer for the word
+        strncpy(word, line_trimmed, WORD_LENGTH);
+        word[WORD_LENGTH] = '\0';
 
         int is_word = 1;        // Control variable to check if word is valid
-        for(int j = 0; j < 5; j++) {
-            if(word[j] >= 'a' && word[j] <= 'z') word[j] &= 0x5f;       // Convert to uppercase
+        for(int j = 0; j < WORD_LENGTH; j++) {
+            if(word[j] >= 'a' && word[j] <= 'z') {
+                word[j] = word[j] - 'a' + 'A';       // Convert to uppercase
+            }
             if(word[j] < 'A' || word[j] > 'Z') is_word = 0;             // Check if word is valid
         }
 
         if(is_word){
-            wordlist[i] = (char*) malloc(sizeof(char) * 6);
-            strcpy(wordlist[i], word);
-
-            // Reallocate memory for wordlist if needed
-            if(i % 100 == 0 && i != 0) {
-                wordlist_size += 100;
-                wordlist = (char**) realloc(wordlist, sizeof(char*) * wordlist_size);
-                if(wordlist == NULL) {
+            // Reallocate memory for wordlist if needed BEFORE adding the word
+            if(i >= wordlist_size) {
+                wordlist_size *= 2; // Double the size
+                char **temp = (char**) realloc(wordlist, sizeof(char*) * wordlist_size);
+                if(temp == NULL) {
                     fprintf(stderr, "\x1b[31;1mError reallocating wordlist memory: %s\x1b[0m\n", strerror(errno));
                     exit(EXIT_FAILURE);
                 }
+                wordlist = temp;
             }
+            
+            wordlist[i] = (char*) malloc(sizeof(char) * 6);
+            strcpy(wordlist[i], word);
             i++;
         }
+        
+        // Free the temporary trimmed line
+        free(line_trimmed);
     }
 
     // Save wordlist into memory
@@ -119,7 +121,7 @@ void game_init(game_t *game) {
 }
  
 void game_loop(game_t *game) {
-    while(game->turn <= 6) {
+    while(game->turn <= MAX_TURNS) {
         game_print_prompt(game);
         game_print_guess(game);
 
@@ -154,9 +156,9 @@ void game_print_prompt(game_t *game) {
         fflush(stdout);
         
         if (fgets(input, sizeof(input), stdin) == NULL) {
-            fprintf(stderr, "\x1b[31;1mError reading input\x1b[0m\n");
+            // EOF reached (Ctrl+C or pipe ended), exit gracefully
             game_end(game);
-            exit(EXIT_FAILURE);
+            exit(EXIT_SUCCESS);
         }
         
         // Remove newline
@@ -166,22 +168,24 @@ void game_print_prompt(game_t *game) {
         trim_whitespace(trimmed, sizeof(trimmed), input);
         
         // Check if word is 5 letters
-        if (strlen(trimmed) != 5) {
+        if (strlen(trimmed) != WORD_LENGTH) {
             fprintf(stdout, "\x1b[1A");         // Move up
             fprintf(stdout, "\x1b[2K");         // Clear line
-            fprintf(stdout, "\x1b[31;1mError: Word must be 5 characters long. Try again.\x1b[0m\n");
+            fprintf(stdout, "\x1b[31;1mError: Word must be %d characters long. Try again.\x1b[0m\n", WORD_LENGTH);
             continue;
         }
         
-        // Copy to game->guess and convert to uppercase
-        strncpy(game->guess, trimmed, 5);
+        // Copy to game->guess and convert to uppercase and validate input against alphabet
+        memset(game->guess, 0, sizeof(game->guess));        // Clear the guess buffer
+        strncpy(game->guess, trimmed, WORD_LENGTH);
         int invalid_input = 0;
-        for (int i = 0; i < 5; i++) {
-            // Convert to uppercase using bitwise AND with 0x5F (if char is lowercase)
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            // Convert to uppercase (if char is lowercase)
             if (game->guess[i] >= 'a' && game->guess[i] <= 'z') {
-                game->guess[i] &= 0x5F;
+                game->guess[i] = game->guess[i] - 'a' + 'A';
             }
 
+            // Check if character is a valid uppercase letter
             if (game->guess[i] < 'A' || game->guess[i] > 'Z') {
                 invalid_input = 1;
                 break;
@@ -191,10 +195,27 @@ void game_print_prompt(game_t *game) {
         if (invalid_input) {
             fprintf(stdout, "\x1b[1A");         // Move up
             fprintf(stdout, "\x1b[2K\r");       // Clear line
-            fprintf(stdout, "\x1b[31;1mError: Word must only contain letters. Try again.\x1b[0m\n");
+            fprintf(stdout, "\x1b[31;1mError: Word must only contain English letters. Try again.\x1b[0m\n");
             continue;
         }
-        
+
+        // Check if the guessed word is in the wordlist
+        int found = 0;
+        for (int i = 0; i < game->wordlist_size; i++) {
+            if (strcmp(game->guess, game->wordlist[i]) == 0) {
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            fprintf(stdout, "\x1b[1A");         // Move up
+            fprintf(stdout, "\x1b[2K\r");       // Clear line
+            fprintf(stdout, "\x1b[31;1mError: Not a word. Try again.\x1b[0m\n");
+            continue;
+        }
+
+        // If everything is fine, break the loop
         break;
     }
 }
@@ -209,155 +230,61 @@ void game_print_guess(game_t *game) {
     // Print guess beginning
     fprintf(stdout, "Turn %d: ", game->turn);
 
-    // TODO: Count letters in word to guess and the guess,
-    //       then compare them to each other and print annpotated guess
+    // Print guess letters, default to incorrect annotation
+    //-----------------------------------------------------
 
-    // Discard following ↓
-    //---------------------------------------------
+    for(int i = 0; i < WORD_LENGTH; i++) {
+        fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;7m%c\x1b[0m", game->guess[i]);
+    }
 
-    // Create word counters
-    counter_arr_t *word_counters = (counter_arr_t*) malloc(sizeof(counter_arr_t));
-    word_counters->len = 0;      // Initial size of zero
-    word_counters->letter_counters = (letter_count_t*) malloc(5 * sizeof(letter_count_t));
+    // Go back to the beginning of the word
+    fprintf(stdout, "\x1b[5D");
 
-    // Create guess counters
-    counter_arr_t *guess_counters = (counter_arr_t*) malloc(sizeof(counter_arr_t));
-    guess_counters->len = 0;      // Initial size of zero
-    guess_counters->letter_counters = (letter_count_t*) malloc(5 * sizeof(letter_count_t));
+    // Array to count letters in the word
+    int word_counts[ALPHABET_SIZE] = {0};
 
-    // Count word letters
-    for(int i = 0; i < 5; i++) {
-        char letter = game->word[i];            // Fetch letter from word
+    // Count letters in the word to guess
+    for(int i = 0; i < WORD_LENGTH; i++) {
+        word_counts[game->word[i] - 'A']++;
+    }
 
-        // Check if letter is already in word_counters
-        //--------------------------------------------
-
-        // If word counter is empty, add letter
-        if(word_counters->len == 0) {
-            word_counters->letter_counters[word_counters->len].letter = letter;
-            word_counters->letter_counters[word_counters->len].count = 1;
-            word_counters->letter_counters[word_counters->len].guessed = -1;
-            word_counters->len++;
-            continue;
+    // Annotate correct placement guesses
+    for(int i = 0; i < WORD_LENGTH; i++) {
+        if(game->guess[i] == game->word[i]) {
+            // Print letter in green background
+            fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;2m%c\x1b[0m", game->guess[i]);
+            word_counts[game->guess[i] - 'A']--;        // Decrease word letter count
         }
-        
-        // If word counter is not empty, check if letter is already in word_counters, add if not
-        for(int j = 0; j < word_counters->len; j++) {
-            if(word_counters->letter_counters[j].letter == letter) {
-                word_counters->letter_counters[j].count++;
-                break;
-            }
-
-            if(j == word_counters->len - 1) {
-                word_counters->letter_counters[word_counters->len].letter = letter;
-                word_counters->letter_counters[word_counters->len].count = 1;
-                word_counters->letter_counters[word_counters->len].guessed = -1;
-                word_counters->len++;
-                break;
-            }
+        else {
+            // Move cursor forward to the next letter
+            fprintf(stdout, "\x1b[1C");
         }
     }
 
-    // Count guess letters
-    for(int i = 0; i < 5; i++) {
-        char letter = game->guess[i];           // Fetch letter from guess
+    // Go back to the beginning of the word
+    fprintf(stdout, "\x1b[5D");
 
-        // Check if letter is already in guess_counters
-        //--------------------------------------------
-
-        // If guess counter is empty, add letter
-        if(guess_counters->len == 0) {
-            guess_counters->letter_counters[guess_counters->len].letter = letter;
-            guess_counters->letter_counters[guess_counters->len].count = 1;
-            guess_counters->letter_counters[guess_counters->len].guessed = 0;
-            guess_counters->len++;
-            continue;
-        }
-        
-        // If guess counter is not empty, check if letter is already in guess_counters, add if not    
-        for(int j = 0; j < guess_counters->len; j++) {
-            if(guess_counters->letter_counters[j].letter == letter) {
-                guess_counters->letter_counters[j].count++;
-                break;
-            }
-
-            if(j == guess_counters->len - 1) {
-                guess_counters->letter_counters[guess_counters->len].letter = letter;
-                guess_counters->letter_counters[guess_counters->len].count = 1;
-                guess_counters->letter_counters[guess_counters->len].guessed = 0;
-                guess_counters->len++;
-                break;
+    // Annotate incorrect placement guesses
+    for(int i = 0; i < WORD_LENGTH; i++) {
+        if(game->guess[i] != game->word[i]) {
+            // Check if the letter is in the word
+            if(word_counts[game->guess[i] - 'A'] > 0) {
+                // Print letter in yellow background
+                fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;3m%c\x1b[0m", game->guess[i]);
+                word_counts[game->guess[i] - 'A']--;    // Decrease word letter count
+            } else {
+                // Print letter in gray background (incorrect letter)
+                fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;7m%c\x1b[0m", game->guess[i]);
             }
         }
-    }
-
-    // Annotate guess
-    for(int i = 0; i < 5; i++) {
-        int guess_letter_flag = 0;            // Flag to check for guess
-        // Check if the letter is guessed correctly in wrong position
-        for(int j = 0; j < guess_counters->len && !guess_letter_flag; j++) {
-            // Check for the same letter in guess_counters and word_counters
-            for(int k = 0; k < word_counters->len && !guess_letter_flag; k++) {
-                if(guess_counters->letter_counters[j].letter == word_counters->letter_counters[k].letter) {
-                    // Check if the letter is guessed correctly in correct position
-                    if(game->guess[i] == game->word[i]) {
-                        // Print letter in green background
-                        fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;2m%c", game->guess[i]);
-                    }
-                    // Check if the letter is guessed correctly in wrong position
-                    else if(game->guess[i] == word_counters->letter_counters[k].letter) {
-                        // Check guess letter counts against actual letter counts
-                        if(guess_counters->letter_counters[j].guessed > word_counters->letter_counters[k].count) {
-                            // Out of letter guesses, print letter in gray background = Incorrect letter
-                            fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;7m%c", game->guess[i]);
-                        }
-                        else {
-                            // Print letter in yellow background
-                            fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;3m%c", game->guess[i]);
-                        }
-                    }
-                    else {
-                        // Incorrect guess = gray background
-                        fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;7m%c", game->guess[i]);
-                    }
-
-                    guess_counters->letter_counters[j].guessed++;           // Increment letter guesses count
-                    guess_letter_flag = 1;                                  // Set guess_letter_flag to true
-                }
-                else if(k == word_counters->len - 1) {
-                    // Out of letter = Incorrect guess = gray background
-                    fprintf(stdout, "\x1b[38;5;0m\x1b[48;5;7m%c", game->guess[i]);
-                    guess_counters->letter_counters[j].guessed++;           // Increment letter guesses count
-                    guess_letter_flag = 1;                                  // Set guess_letter_flag to true
-                }
-            }
+        else {
+            // Move cursor forward to the next letter (already printed in green)
+            fprintf(stdout, "\x1b[1C");
         }
     }
-
-    // Clean up
-    //---------
-
-    // Free memory for letter counters
-    for(int i = 0; i < guess_counters->len; i++) {
-        free(guess_counters->letter_counters);
-    }
-
-    // Free memory for word counters
-    for(int i = 0; i < word_counters->len; i++) {
-        free(word_counters->letter_counters);
-    }
-
-    // Free guess_counters and word_counters
-    free(guess_counters);
-    free(word_counters);
 
     // Print a new line and reset the colors
     fprintf(stdout, "\x1b[0m\n");
-}
-
-
-void game_annotate_guess(game_t *game, counter_arr_t *w_counters, counter_arr_t *g_counters) {
-
 }
 
 void game_print_result(game_t *game) {
