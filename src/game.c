@@ -41,35 +41,68 @@ void game_init(game_t *game) {
     }
 
     // Allocate memory for wordlist
-    int wordlist_size = 100;
+    int wordlist_size = 3000;  // Large enough to avoid multiple reallocations
     char **wordlist = (char**) malloc(sizeof(char*) * wordlist_size);
     if(wordlist == NULL) {
         fprintf(stderr, "\x1b[31;1mError allocating wordlist memory: %s\x1b[0m\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
-    char line[100];
 
-    // Read individual lines from wordlist file
+    // Read individual lines from wordlist file using manual character reading
     int i = 0;
-    while(fgets(line, sizeof(line), file) != NULL) {
-        if(line[0] == '\n') continue;           // Skip empty lines
-
-        if(line[sizeof(line) - 1] != '\n' && line[sizeof(line) - 1] != '\0') {
-            // Line is too long, skip to the end of the line
-            char bin;
-            while((bin = fgetc(file)) != '\n' && bin != EOF);
+    char *line_buffer = NULL;
+    size_t buffer_size = 0;
+    size_t line_pos = 0;
+    int ch;
+    
+    // Initialize buffer
+    buffer_size = 256;
+    line_buffer = (char*) malloc(buffer_size);
+    if(!line_buffer) {
+        fprintf(stderr, "\x1b[31;1mError allocating line buffer: %s\x1b[0m\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    
+    while((ch = fgetc(file)) != EOF) {
+        // Expand buffer if needed
+        if(line_pos >= buffer_size - 1) {
+            buffer_size *= 2;
+            char *temp = (char*) realloc(line_buffer, buffer_size);
+            if(!temp) {
+                fprintf(stderr, "\x1b[31;1mError reallocating line buffer: %s\x1b[0m\n", strerror(errno));
+                free(line_buffer);
+                exit(EXIT_FAILURE);
+            }
+            line_buffer = temp;
         }
-        line[strcspn(line, "\n")] = '\0';
-        if(line[0] == '#') continue;            // Skip comments
+        
+        if(ch == '\n') {
+            // End of line - process it
+            line_buffer[line_pos] = '\0';
+            
+            if(line_buffer[0] == '\0') {
+                line_pos = 0;
+                continue;           // Skip empty lines
+            }
+            if(line_buffer[0] == '#') {
+                line_pos = 0;
+                continue;            // Skip comments
+            }
 
-        size_t len = strlen(line);
+        size_t len = strlen(line_buffer);
         char *line_trimmed = (char*) malloc(sizeof(char) * (len + 1));
-        len = trim_whitespace(line_trimmed, len + 1, line);
-        line_trimmed = (char*) realloc(line_trimmed, sizeof(char) * (len + 1));
+        len = trim_whitespace(line_trimmed, len + 1, line_buffer);
 
         char word[WORD_LENGTH + 1]; // Buffer for the word
+        memset(word, 0, sizeof(word));  // Clear the buffer
         strncpy(word, line_trimmed, WORD_LENGTH);
         word[WORD_LENGTH] = '\0';
+
+        // Skip words that are not exactly WORD_LENGTH characters
+        if(strlen(word) != WORD_LENGTH) {
+            free(line_trimmed);
+            continue;
+        }
 
         int is_word = 1;        // Control variable to check if word is valid
         for(int j = 0; j < WORD_LENGTH; j++) {
@@ -98,7 +131,17 @@ void game_init(game_t *game) {
         
         // Free the temporary trimmed line
         free(line_trimmed);
+        
+        // Reset for next line
+        line_pos = 0;
+        } else {
+            // Add character to line buffer
+            line_buffer[line_pos++] = (char)ch;
+        }
     }
+
+    // Free the line buffer
+    free(line_buffer);
 
     // Save wordlist into memory
     game->wordlist_size = i;
@@ -137,7 +180,7 @@ void game_loop(game_t *game) {
 
 void game_end(game_t *game) {
     // Free wordlist memory first
-    for(int i = 0; i < game->wordlist_size; i++) {
+    for(size_t i = 0; i < game->wordlist_size; i++) {
         free(game->wordlist[i]);
     }
     free(game->wordlist);
@@ -201,7 +244,7 @@ void game_print_prompt(game_t *game) {
 
         // Check if the guessed word is in the wordlist
         int found = 0;
-        for (int i = 0; i < game->wordlist_size; i++) {
+        for (size_t i = 0; i < game->wordlist_size; i++) {
             if (strcmp(game->guess, game->wordlist[i]) == 0) {
                 found = 1;
                 break;

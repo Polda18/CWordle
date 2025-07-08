@@ -40,7 +40,7 @@ else
   ZIP_FILE = wordle_linux_x64.zip
   MKDIR = mkdir -p $(1)
   RM_CMD = rm -rf $(TARGET_DIR) || echo Target directory already clean
-  RM_CMD_ZIP = rm $(ZIP_DIR)/$(EXEC)
+  RM_CMD_ZIP = rm -f $(ZIP_DIR)/$(EXEC)
   CP_CMD = cp $(TARGET_DIR)/$(EXEC) $(ZIP_DIR)
   # Linux zip command
   ZIP_CMD = cd $(ZIP_DIR) && zip -r ../$(OUTPUT_DIR)/$(ZIP_FILE) *

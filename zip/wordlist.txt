@@ -633,6 +633,7 @@ earth
 easel
 eaten
 eater
+ebola
 ebony
 eclat
 edict

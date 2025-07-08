@@ -24,7 +24,7 @@ int main(void) {
     fprintf(stdout, "-----------------------------------------------------\n");
     fprintf(stdout, "Welcome to Wordle!\n");
     fprintf(stdout, "Author: Polda18/CZghost\n");
-    fprintf(stdout, "Version: v1.0\n");
+    fprintf(stdout, "Version: v1.1\n");
     fprintf(stdout, "License: GNU GPLv3\n");
     fprintf(stdout, "-----------------------------------------------------\n\n");
 

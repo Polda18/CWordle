@@ -37,7 +37,7 @@ size_t trim_whitespace(char *out, size_t len, const char *str) {
     ++end;
 
     // Set output size to minimum of trimmed string length and buffer size minus 1
-    out_size = (end - str) < len - 1 ? (end - str) : len - 1;
+    out_size = (size_t)(end - str) < len - 1 ? (size_t)(end - str) : len - 1;
 
     // Copy trimmed string to output buffer and add null terminator
     memcpy(out, str, out_size);
