@@ -5,8 +5,15 @@ This is my implementation of Wordle in C. The game is portable. Just place
 the contents of the ZIP file anywhere you want, perhaps on your flash drive,
 and you can play on any system with that flash drive connected.
 
-This game is available for both Windows and Linux. Linux version should work
-on MacOS as well, but that hasn't been tested.
+This game is available for both Windows and Linux. MacOS version is not available,
+but it is possible to build it yourself, just run `make` and copy the `wordlist.txt`
+and `wordle` into the same directory. MacOS version will be provided in the future
+if people are interested. My options of testing it on Mac are limited, I do not
+own a Mac on which I could test the program. However, being it a POSIX system,
+it should behave almost exactly like on Linux. The only difference is the executable
+binary format. Also, currently, only x86_64 (Intel) versions are distributed.
+To play on an ARM64 architecture, you have to build it yourself. ARM64 and possibly
+also Apple Silicon platforms are going to be implemented.
 
 ## How to play?
 

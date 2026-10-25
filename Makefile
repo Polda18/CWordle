@@ -14,7 +14,7 @@ CFLAGS = -Wall -Wextra -O2 -std=c17
 # Directories
 SRC_DIR = ./src
 TARGET_DIR = ./build
-ZIP_DIR = ./zip
+ZIP_DIR = ./zip_content
 OUTPUT_DIR = ./out
 
 # Source and object files
