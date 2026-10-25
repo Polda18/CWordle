@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Build uses GNU Make with `gcc` (`-Wall -Wextra -O2 -std=c17`). The Makefile auto-detects the platform via `$(OS)` and selects the right exec name, ZIP commands, and shell utilities — Windows uses `cmd`/PowerShell wrappers, everything else uses Unix tools.
 
 - `make` — compile to `./build/wordle` (or `wordle.exe` on Windows)
-- `make zip` — compile, copy the executable into `./zip/`, then produce `./out/wordle_linux_x64.zip` or `./out/wordle_win64.zip`
-- `make clean` — remove the `./build/` tree and the staged executable in `./zip/`
+- `make zip` — compile, copy the executable into `./zip_content/`, then produce `./out/wordle_linux_x64.zip` or `./out/wordle_win64.zip`
+- `make clean` — remove the `./build/` tree and the staged executable in `./zip_content/`
 
 There is no test suite, lint config, or CI. Changes are validated by running the produced binary from a directory containing `wordlist.txt` (the binary `fopen`s it via a relative path — running from elsewhere fails immediately).
 
@@ -24,4 +24,4 @@ Tiny single-binary console game. ~5 source files, no third-party deps. The inter
 
 ## Distribution layout
 
-`./zip/` holds the bundled-game payload (`wordlist.txt`, `license.txt`, `readme.txt`). `make zip` copies the freshly built executable into this directory and zips the whole folder into `./out/`. The wordlist shipped to users is the one in `./zip/wordlist.txt` — edit it there, not anywhere else.
+`./zip_content/` holds the bundled-game payload (`wordlist.txt`, `license.txt`, `readme.txt`). `make zip` copies the freshly built executable into this directory and zips the whole folder into `./out/`. The wordlist shipped to users is the one in `./zip_content/wordlist.txt` — edit it there, not anywhere else.
